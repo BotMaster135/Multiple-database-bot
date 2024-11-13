@@ -72,7 +72,7 @@ async def start():
         tempDict["indexDB"] = THIRDDB_URI
         logging.info(f"Since Primary DB have only {free_dbSize} MB left, third DB will be used to store datas.")
     elif THIRDDB_URI is None:
-        logging.error("Missing third DB URI !\n\nAdd SECONDDB_URI now !\n\nExiting...")
+        logging.error("Missing third DB URI !\n\nAdd THIRDDB_URI now !\n\nExiting...")
         exit()
     else:
         logging.info(f"Since third DB have enough space ({free_dbSize}MB) left, It will be used for storing datas.")

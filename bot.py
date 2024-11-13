@@ -66,6 +66,18 @@ async def start():
     #choose the right db by checking the free space
     stats = await clientDB.command('dbStats')
     #calculating the free db space from bytes to MB
+
+    free_dbSize = round(512-((stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))), 2)
+    if THIRDDB_URI and free_dbSize<10: #if the primary db have less than 10MB left, use second DB.
+        tempDict["indexDB"] = THIRDDB_URI
+        logging.info(f"Since Primary DB have only {free_dbSize} MB left, third DB will be used to store datas.")
+    elif SECONDDB_URI is None:
+        logging.error("Missing third DB URI !\n\nAdd SECONDDB_URI now !\n\nExiting...")
+        exit()
+    else:
+        logging.info(f"Since secondary DB have enough space ({free_dbSize}MB) left, It will be used for storing datas.")
+    await choose_mediaDB()
+    
     free_dbSize = round(512-((stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))), 2)
     if SECONDDB_URI and free_dbSize<10: #if the primary db have less than 10MB left, use second DB.
         tempDict["indexDB"] = SECONDDB_URI

@@ -70,7 +70,7 @@ async def start():
     free_dbSize = round(512-((stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))), 2)
     if THIRDDB_URI and free_dbSize<10: #if the primary db have less than 10MB left, use second DB.
         tempDict["indexDB"] = THIRDDB_URI
-        logging.info(f"Since Primary DB have only {free_dbSize} MB left, third DB will be used to store datas.")
+        logging.info(f"Since secondary DB have only {free_dbSize} MB left, third DB will be used to store datas.")
     elif THIRDDB_URI is None:
         logging.error("Missing third DB URI !\n\nAdd THIRDDB_URI now !\n\nExiting...")
         exit()

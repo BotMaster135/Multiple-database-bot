@@ -5,13 +5,17 @@
 import pymongo
 
 from sample_info import tempDict
-from info import DATABASE_URI, DATABASE_NAME, SECONDDB_URI
+from info import DATABASE_URI, DATABASE_NAME, SECONDDB_URI, THIRDDB_URI
 
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
 myclient = pymongo.MongoClient(DATABASE_URI)
+mydb = myclient[DATABASE_NAME]
+mycol = mydb['CONNECTION']  
+
+myclient = pymongo.MongoClient(THIRDDB_URI)
 mydb = myclient[DATABASE_NAME]
 mycol = mydb['CONNECTION']  
 

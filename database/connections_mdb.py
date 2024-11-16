@@ -15,9 +15,9 @@ myclient = pymongo.MongoClient(DATABASE_URI)
 mydb = myclient[DATABASE_NAME]
 mycol = mydb['CONNECTION']  
 
-myclient = pymongo.MongoClient(THIRDDB_URI)
-mydb = myclient[DATABASE_NAME]
-mycol = mydb['CONNECTION']  
+myclient3 = pymongo.MongoClient(THIRDDB_URI)
+mydb3 = myclient3[DATABASE_NAME]
+mycol3 = mydb3['CONNECTION']  
 
 myclient2 = pymongo.MongoClient(SECONDDB_URI)
 mydb2 = myclient2[DATABASE_NAME]
@@ -44,10 +44,13 @@ async def add_connection(group_id, user_id):
         'active_group' : group_id,
     }
 
-    if mycol.count_documents( {"_id": user_id} ) == 0 and mycol2.count_documents( {"_id": user_id} ) == 0:
+    if mycol.count_documents( {"_id": user_id} ) == 0 and mycol3.count_documents( {"_id": user_id} ) == 0 and mycol2.count_documents( {"_id": user_id} ) == 0:
         try:
             if tempDict['indexDB'] == DATABASE_URI:
                 mycol.insert_one(data)
+                return True
+                else:
+                mycol3.insert_one(data)
                 return True
             else:
                 mycol2.insert_one(data)
@@ -58,6 +61,15 @@ async def add_connection(group_id, user_id):
     else:
         try:
             if mycol.count_documents( {"_id": user_id} ) == 0:
+                mycol3.update_one(
+                    {'_id': user_id},
+                    {
+                        "$push": {"group_details": group_details},
+                        "$set": {"active_group" : group_id}
+                    }
+                )
+                return True
+            else:
                 mycol2.update_one(
                     {'_id': user_id},
                     {
@@ -85,15 +97,22 @@ async def active_connection(user_id):
         { "_id": user_id },
         { "_id": 0, "group_details": 0 }
     )
+    query3 = mycol3.find_one(
+        { "_id": user_id },
+        { "_id": 0, "group_details": 0 }
+    )
     query2 = mycol2.find_one(
         { "_id": user_id },
         { "_id": 0, "group_details": 0 }
     )
-    if not query and not query2:
+    if not query and not query3 and not query2:
         return None
 
     elif query:
         group_id = query['active_group']
+        return int(group_id) if group_id != None else None
+    else:
+        group_id = query3['active_group']
         return int(group_id) if group_id != None else None
     else:
         group_id = query2['active_group']
@@ -105,12 +124,18 @@ async def all_connections(user_id):
         { "_id": user_id },
         { "_id": 0, "active_group": 0 }
     )
+    query3 = mycol3.find_one(
+        { "_id": user_id },
+        { "_id": 0, "active_group": 0 }
+    )
     query2 = mycol2.find_one(
         { "_id": user_id },
         { "_id": 0, "active_group": 0 }
     )
     if query is not None:
         return [x["group_id"] for x in query["group_details"]]
+    elif query3 is not None:
+        return [x["group_id"] for x in query3["group_details"]]
     elif query2 is not None:
         return [x["group_id"] for x in query2["group_details"]]
     else:
@@ -123,6 +148,11 @@ async def if_active(user_id, group_id):
         { "_id": 0, "group_details": 0 }
     )
     if query is None:
+        query = mycol3.find_one(
+            { "_id": user_id },
+            { "_id": 0, "group_details": 0 }
+        )
+    elif query is None:
         query = mycol2.find_one(
             { "_id": user_id },
             { "_id": 0, "group_details": 0 }
@@ -136,6 +166,11 @@ async def make_active(user_id, group_id):
         {"$set": {"active_group" : group_id}}
     )
     if update.modified_count == 0:
+        update = mycol3.update_one(
+            {'_id': user_id},
+            {"$set": {"active_group" : group_id}}
+        )
+    elif update.modified_count == 0:
         update = mycol2.update_one(
             {'_id': user_id},
             {"$set": {"active_group" : group_id}}
@@ -148,6 +183,11 @@ async def make_inactive(user_id):
         {'_id': user_id},
         {"$set": {"active_group" : None}}
     )
+    if update.modified_count == 0:
+        update = mycol3.update_one(
+            {'_id': user_id},
+            {"$set": {"active_group" : None}}
+        )
     if update.modified_count == 0:
         update = mycol2.update_one(
             {'_id': user_id},
@@ -164,6 +204,18 @@ async def delete_connection(user_id, group_id):
             {"$pull" : { "group_details" : {"group_id":group_id} } }
         )
         if update.modified_count == 0:
+            update = mycol3.update_one(
+                {"_id": user_id},
+                {"$pull" : { "group_details" : {"group_id":group_id} } }
+            )
+            if update.modified_count == 0:
+                return False
+            else:
+                query = mycol3.find_one(
+                    { "_id": user_id },
+                    { "_id": 0 }
+                )
+        if update.modified_count == 0:
             update = mycol2.update_one(
                 {"_id": user_id},
                 {"$pull" : { "group_details" : {"group_id":group_id} } }
@@ -179,10 +231,14 @@ async def delete_connection(user_id, group_id):
                     if query['active_group'] == group_id:
                         prvs_group_id = query["group_details"][len(query["group_details"]) - 1]["group_id"]
 
-                        mycol2.update_one(
+                        mycol.update_one(
                             {'_id': user_id},
                             {"$set": {"active_group" : prvs_group_id}}
-                        )
+                    )
+                elif:   mycol3.update_one(
+                            {'_id': user_id},
+                            {"$set": {"active_group" : None}}
+                    )
                 else:
                     mycol2.update_one(
                         {'_id': user_id},

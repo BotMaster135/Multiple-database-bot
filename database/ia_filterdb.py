@@ -79,6 +79,9 @@ async def choose_mediaDB():
     if tempDict['indexDB'] == DATABASE_URI:
         logger.info("Using first db (Media)")
         saveMedia = Media
+    elif:
+        logger.info("Using third db (Media3)")
+        saveMedia = Media3
     else:
         logger.info("Using second db (Media2)")
         saveMedia = Media2
@@ -161,7 +164,7 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
     if file_type:
         filter['file_type'] = file_type
 
-    total_results = ((await Media.count_documents(filter))+(await Media2.count_documents(filter)))
+    total_results = ((await Media.count_documents(filter))+(await Media3.count_documents(filter))+(await Media2.count_documents(filter)))
 
     #verifies max_results is an even number or not
     if max_results%2 != 0: #if max_results is an odd number, add 1 to make it an even number
@@ -169,13 +172,31 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
         max_results += 1
 
     cursor = Media.find(filter)
+    cursor3 = Media3.find(filter)
     cursor2 = Media2.find(filter)
     # Sort by recent
     cursor.sort('$natural', -1)
+    cursor3.sort('$natural', -1)
     cursor2.sort('$natural', -1)
     # Slice files according to offset and max results
+    cursor3.skip(offset).limit(max_results)
     cursor2.skip(offset).limit(max_results)
     # Get list of files
+    fileList3 = await cursor3.to_list(length=max_results)
+    if len(fileList3)<max_results:
+        next_offset = offset+len(fileList3)
+        cursorSkipper = (next_offset-(await Media3.count_documents(filter)))
+        cursor.skip(cursorSkipper if cursorSkipper>=0 else 0).limit(max_results-len(fileList3))
+        fileList1 = await cursor.to_list(length=(max_results-len(fileList3)))
+        files = fileList3+fileList1
+        next_offset = next_offset + len(fileList1)
+    else:
+        files = fileList3
+        next_offset = offset + max_results
+    if next_offset >= total_results:
+        next_offset = ''
+    return files, next_offset, total_results
+    
     fileList2 = await cursor2.to_list(length=max_results)
     if len(fileList2)<max_results:
         next_offset = offset+len(fileList2)
@@ -219,15 +240,17 @@ async def get_bad_files(query, file_type=None, filter=False):
         filter['file_type'] = file_type
 
     cursor = Media.find(filter)
+    cursor3 = Media3.find(filter)
     cursor2 = Media2.find(filter)
     # Sort by recent
     cursor.sort('$natural', -1)
+    cursor3.sort('$natural', -1)
     cursor2.sort('$natural', -1)
     cursor = Media.find(filter)
     # Sort by recent
     cursor.sort('$natural', -1)
     # Get list of files
-    files = ((await cursor2.to_list(length=(await Media2.count_documents(filter))))+(await cursor.to_list(length=(await Media.count_documents(filter)))))
+    files = ((await cursor2.to_list(length=(await Media2.count_documents(filter))))+(await cursor3.to_list(length=(await Media3.count_documents(filter))))+(await cursor.to_list(length=(await Media.count_documents(filter)))))
 
     #calculate total results
     total_results = len(files)
@@ -240,7 +263,9 @@ async def get_file_details(query):
     filedetails = await cursor.to_list(length=1)
     if not filedetails:
         cursor2 = Media2.find(filter)
+        cursor3 = Media3.find(filter)
         filedetails = await cursor2.to_list(length=1)
+        filedetails = await cursor3.to_list(length=1)
     return filedetails
 
 def encode_file_id(s: bytes) -> str:

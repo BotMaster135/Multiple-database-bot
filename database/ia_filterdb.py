@@ -79,7 +79,7 @@ async def choose_mediaDB():
     if tempDict['indexDB'] == DATABASE_URI:
         logger.info("Using first db (Media)")
         saveMedia = Media
-    elif:
+    else:
         logger.info("Using third db (Media3)")
         saveMedia = Media3
     else:

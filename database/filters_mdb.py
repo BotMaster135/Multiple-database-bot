@@ -3,7 +3,7 @@
 # Ask Doubt on telegram @KingVJ01
 
 import pymongo
-from info import DATABASE_URI, DATABASE_NAME, SECONDDB_URI
+from info import DATABASE_URI, DATABASE_NAME, SECONDDB_URI, THIRDDB_URI
 from pyrogram import enums
 import logging
 from sample_info import tempDict
@@ -12,6 +12,10 @@ logger.setLevel(logging.ERROR)
 
 myclient = pymongo.MongoClient(DATABASE_URI)
 mydb = myclient[DATABASE_NAME]
+
+myclient2 = pymongo.MongoClient(THIRDDB_URI)
+mydb2 = myclient2[DATABASE_NAME]
+
 
 myclient2 = pymongo.MongoClient(SECONDDB_URI)
 mydb2 = myclient2[DATABASE_NAME]

@@ -19,7 +19,7 @@ logging.getLogger("aiohttp.web").setLevel(logging.ERROR)
 
 from pyrogram import Client, idle 
 from pyromod import listen
-from database.ia_filterdb import Media, Media2, choose_mediaDB, db as clientDB
+from database.ia_filterdb import Media, Media2,Media3 choose_mediaDB, db as clientDB
 from database.users_chats_db import db
 from info import *
 from utils import temp
@@ -62,6 +62,7 @@ async def start():
     temp.BANNED_USERS = b_users
     temp.BANNED_CHATS = b_chats
     await Media.ensure_indexes()
+    await Media3.ensure_indexes()
     await Media2.ensure_indexes()
     #choose the right db by checking the free space
     stats = await clientDB.command('dbStats')
